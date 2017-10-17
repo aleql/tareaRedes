@@ -5,6 +5,8 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.*;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 public class TCPtoUDP implements Runnable{
     private Thread thread1;
@@ -27,6 +29,7 @@ public class TCPtoUDP implements Runnable{
             //enviar paquete 0 primero
             InetAddress host = InetAddress.getByName("localhost");
             int port = 2000;
+            int timeout = 5000;
             byte[] udpStart = new byte[0];
             DatagramPacket reqStartUdp = new DatagramPacket(udpStart, udpStart.length, host, port);
             udp.send(reqStartUdp);
@@ -36,7 +39,7 @@ public class TCPtoUDP implements Runnable{
 
                 in = new DataInputStream(socketTCP.getInputStream());
                 byte[] buffer5Bytes = new byte[5];
-                int data = in.read(buffer5Bytes);
+                in.read(buffer5Bytes);
                 String ds = new String(buffer5Bytes, "UTF-8");
 
                 if(!isNumeric(ds)){
@@ -48,11 +51,31 @@ public class TCPtoUDP implements Runnable{
                     udp.send(reqStartUdp);
                     break;
                 } else {
+                    String seqN = getNextId();
+                    byte[] header = ("D" + seqN).getBytes();
                     byte[] buffer = new byte[Integer.parseInt(ds)];
-                    data = in.read(buffer);
-                    DatagramPacket dp = new DatagramPacket(buffer, buffer.length, host, port);
+                    in.read(buffer);
+                    byte[] data = concat(header, buffer);
+                    DatagramPacket dp = new DatagramPacket(data, data.length, host, port);
                     udp.send(dp);
-                    String dss = new String(buffer, "UTF-8");
+                    long tStart = System.currentTimeMillis();
+
+                    busyWaiting:
+                    while(true){
+                        long tEnd = System.currentTimeMillis();
+                        long tDelta = tEnd - tStart;
+                        if(tDelta >= timeout) {
+                            udp.send(dp);
+                            tStart = System.currentTimeMillis();
+                        }
+                        while(!bwcs.synchronizedStack.isEmpty()) {
+                            String ackN = bwcs.synchronizedStack.pop();
+                            if(ackN.equals(seqN)){
+                                break busyWaiting;
+                            }
+                        }
+                    }
+
                 }
             }
         } catch (EOFException e) {
@@ -70,7 +93,22 @@ public class TCPtoUDP implements Runnable{
         }
     }
 
-    public static boolean isNumeric(String s) {
+    private static boolean isNumeric(String s) {
         return s != null && s.matches("[-+]?\\d*\\.?\\d+");
+    }
+
+    private String getNextId() {
+        bwcs.sn++;
+        bwcs.sn = bwcs.sn%100000;
+        return bwcs.myIntToString5(bwcs.sn);
+    }
+
+    private byte[] concat(byte[] a, byte[] b) {
+        int aLen = a.length;
+        int bLen = b.length;
+        byte[] c= new byte[aLen+bLen];
+        System.arraycopy(a, 0, c, 0, aLen);
+        System.arraycopy(b, 0, c, aLen, bLen);
+        return c;
     }
 }

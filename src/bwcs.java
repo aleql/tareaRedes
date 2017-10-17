@@ -1,6 +1,19 @@
 import java.net.*;
 import java.io.*;
 public class bwcs {
+
+    public static SynchronizedStack synchronizedStack = new SynchronizedStack();
+
+    public static String myIntToString5 (int l) {
+        String l5 = Integer.toString(l);
+        while(l5.length() < 5){
+            l5 = "0" + l5;
+        }
+        return l5;
+    }
+
+    public static int sn;
+
     public static void main(String args[]) {
         DatagramSocket udp = null;
         ServerSocket ss = null;

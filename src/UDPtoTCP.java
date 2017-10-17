@@ -21,10 +21,14 @@ public class UDPtoTCP implements Runnable{
     public void run() {
         try {
             while (true) {
-                byte[] bufferDatagram = new byte[1400];
+                byte[] bufferDatagram = new byte[1406];
                 DatagramPacket req = new DatagramPacket(bufferDatagram, bufferDatagram.length);
-
                 udp.receive(req);
+                String msgType = req.toString().substring(0,1);
+                if (msgType.equals("A")) {
+                    bwcs.synchronizedStack.push(req);
+                    break;
+                }
 
                 byte[] data = req.getData();
 
@@ -33,27 +37,21 @@ public class UDPtoTCP implements Runnable{
                 DataOutputStream out = new DataOutputStream(socketTCP.getOutputStream());
 
 
-                length = myIntToString5(req.getLength());
+                length = bwcs.myIntToString5(req.getLength());
                 udpStart = length.getBytes();
-
-
 
                 if (length.equals("00000")) {
                     out.write(udpStart);
                     break;
 
                 } else {
-
-
                     //Se concatena el arreglo con el largo junto a los datos y se mandan como un solo paquete
-                    byte[] sendData = Arrays.copyOfRange(data,0, req.getLength());
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
+                    byte[] sendData = Arrays.copyOfRange(data,6, req.getLength());
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                     outputStream.write(udpStart);
                     outputStream.write(sendData);
-                    byte[] finalMessage = outputStream.toByteArray( );
+                    byte[] finalMessage = outputStream.toByteArray();
                     out.write(finalMessage);
-
-
                 }
             }
         } catch (EOFException e) {
@@ -69,13 +67,5 @@ public class UDPtoTCP implements Runnable{
             thread1 = new Thread (this, threadName);
             thread1.start ();
         }
-    }
-
-    public static String myIntToString5 (int l) {
-        String l5 = Integer.toString(l);
-        while(l5.length() < 5){
-            l5 = "0" + l5;
-        }
-        return l5;
     }
 }
