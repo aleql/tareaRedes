@@ -19,39 +19,53 @@ public class UDPtoTCP implements Runnable{
 
     @Override
     public void run() {
+        int expectedSeqN = -1;
+        DataOutputStream out = null;
+        try {
+            out = new DataOutputStream(socketTCP.getOutputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         try {
             while (true) {
                 byte[] bufferDatagram = new byte[1406];
                 DatagramPacket req = new DatagramPacket(bufferDatagram, bufferDatagram.length);
                 udp.receive(req);
-                String msgType = req.toString().substring(0,1);
+                String msgType = new String(req.getData(), "UTF-8").substring(0,1);
+                //System.out.println(msgType);
+
                 if (msgType.equals("A")) {
                     bwcs.synchronizedStack.push(req);
-                    break;
+                    continue;
                 }
 
-                byte[] data = req.getData();
+                int length;
+                length = req.getLength();
+                String seqN = new String(req.getData(), "UTF-8").substring(1,6);
 
-                String length;
-                byte[] udpStart;
-                DataOutputStream out = new DataOutputStream(socketTCP.getOutputStream());
+                if(expectedSeqN==-1){
+                    expectedSeqN = Integer.parseInt(seqN);
+                }
 
+                //mandar ACK
+                InetAddress host = InetAddress.getByName("localhost");
+                int port = 2000;
+                byte[] header = ("A" + seqN).getBytes();
+                DatagramPacket dp = new DatagramPacket(header, header.length, host, port);
+                udp.send(dp);
 
-                length = bwcs.myIntToString5(req.getLength());
-                udpStart = length.getBytes();
-
-                if (length.equals("00000")) {
-                    out.write(udpStart);
-                    break;
-
-                } else {
+                if (expectedSeqN == Integer.parseInt(seqN)) {
                     //Se concatena el arreglo con el largo junto a los datos y se mandan como un solo paquete
-                    byte[] sendData = Arrays.copyOfRange(data,6, req.getLength());
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                    outputStream.write(udpStart);
-                    outputStream.write(sendData);
-                    byte[] finalMessage = outputStream.toByteArray();
-                    out.write(finalMessage);
+                    byte[] datagramData = Arrays.copyOfRange(req.getData(),6, req.getLength());
+                    byte[] lengtHeader = bwcs.myIntToString5(length-6).getBytes();
+                    byte[] sendData = bwcs.concat(lengtHeader,datagramData);
+                    //System.out.println(new String(sendData, "UTF-8"));
+                    out.write(sendData);
+                    expectedSeqN++;
+                    if (length == 6) {
+                        System.out.println("paquete largo 6");
+                        break;
+                    }
                 }
             }
         } catch (EOFException e) {

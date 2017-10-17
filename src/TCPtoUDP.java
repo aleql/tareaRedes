@@ -29,7 +29,7 @@ public class TCPtoUDP implements Runnable{
             //enviar paquete 0 primero
             InetAddress host = InetAddress.getByName("localhost");
             int port = 2000;
-            int timeout = 5000;
+            int timeout = 1000;
             byte[] udpStart = new byte[0];
             DatagramPacket reqStartUdp = new DatagramPacket(udpStart, udpStart.length, host, port);
             udp.send(reqStartUdp);
@@ -41,41 +41,26 @@ public class TCPtoUDP implements Runnable{
                 byte[] buffer5Bytes = new byte[5];
                 in.read(buffer5Bytes);
                 String ds = new String(buffer5Bytes, "UTF-8");
+                String seqN = bwcs.getNextId();
 
                 if(!isNumeric(ds)){
                     continue;
                 }
 
+
                 else if(ds.equals("00000")) {
-                    reqStartUdp = new DatagramPacket(udpStart, udpStart.length, host, port);
-                    udp.send(reqStartUdp);
+                    byte[] header = ("D" + seqN).getBytes();
+                    reqStartUdp = new DatagramPacket(header, header.length, host, port);
+                    stopAndWait(reqStartUdp, timeout, seqN);
                     break;
                 } else {
-                    String seqN = getNextId();
-                    byte[] header = ("D" + seqN).getBytes();
+
                     byte[] buffer = new byte[Integer.parseInt(ds)];
                     in.read(buffer);
-                    byte[] data = concat(header, buffer);
+                    byte[] header = ("D" + seqN).getBytes();
+                    byte[] data = bwcs.concat(header, buffer);
                     DatagramPacket dp = new DatagramPacket(data, data.length, host, port);
-                    udp.send(dp);
-                    long tStart = System.currentTimeMillis();
-
-                    busyWaiting:
-                    while(true){
-                        long tEnd = System.currentTimeMillis();
-                        long tDelta = tEnd - tStart;
-                        if(tDelta >= timeout) {
-                            udp.send(dp);
-                            tStart = System.currentTimeMillis();
-                        }
-                        while(!bwcs.synchronizedStack.isEmpty()) {
-                            String ackN = bwcs.synchronizedStack.pop();
-                            if(ackN.equals(seqN)){
-                                break busyWaiting;
-                            }
-                        }
-                    }
-
+                    stopAndWait(dp, timeout, seqN);
                 }
             }
         } catch (EOFException e) {
@@ -97,18 +82,26 @@ public class TCPtoUDP implements Runnable{
         return s != null && s.matches("[-+]?\\d*\\.?\\d+");
     }
 
-    private String getNextId() {
-        bwcs.sn++;
-        bwcs.sn = bwcs.sn%100000;
-        return bwcs.myIntToString5(bwcs.sn);
-    }
-
-    private byte[] concat(byte[] a, byte[] b) {
-        int aLen = a.length;
-        int bLen = b.length;
-        byte[] c= new byte[aLen+bLen];
-        System.arraycopy(a, 0, c, 0, aLen);
-        System.arraycopy(b, 0, c, aLen, bLen);
-        return c;
+    public void stopAndWait(DatagramPacket dp, int timeout, String seqN) throws IOException {
+        this.udp.send(dp);
+        long tStart = System.currentTimeMillis();
+        while(true){
+            long tEnd = System.currentTimeMillis();
+            long tDelta = tEnd - tStart;
+            if(tDelta >= timeout) {
+                try {
+                    this.udp.send(dp);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                tStart = System.currentTimeMillis();
+            }
+            while(!bwcs.synchronizedStack.isEmpty()) {
+                String ackN = bwcs.synchronizedStack.pop();
+                if(ackN.equals(seqN)){
+                    return;
+                }
+            }
+        }
     }
 }

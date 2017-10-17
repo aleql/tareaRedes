@@ -7,7 +7,12 @@ public class SynchronizedStack {
     Stack<String> datagramPacketStack = new Stack<>();
 
     public synchronized void push(DatagramPacket dp) {
-        String ackN = dp.toString().substring(1,5);
+        String ackN = "";
+        try {
+            ackN = new String(dp.getData(), "UTF-8").substring(1,6);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         this.datagramPacketStack.push(ackN);
     }
 

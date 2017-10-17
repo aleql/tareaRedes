@@ -12,7 +12,22 @@ public class bwcs {
         return l5;
     }
 
-    public static int sn;
+    public static String getNextId() {
+        bwcs.sn++;
+        bwcs.sn = bwcs.sn%100000;
+        return bwcs.myIntToString5(bwcs.sn);
+    }
+
+    public static byte[] concat(byte[] a, byte[] b) {
+        int aLen = a.length;
+        int bLen = b.length;
+        byte[] c= new byte[aLen+bLen];
+        System.arraycopy(a, 0, c, 0, aLen);
+        System.arraycopy(b, 0, c, aLen, bLen);
+        return c;
+    }
+
+    public static int sn = -1;
 
     public static void main(String args[]) {
         DatagramSocket udp = null;
