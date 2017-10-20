@@ -1,0 +1,73 @@
+Tarea 2 de Redes
+Integrantes: Valentina Liberona
+             Alejandro Quijada
+
+Repositorio: https://github.com/aleql/tareaRedes/
+
+Descripcion del entorno donde se produjeron las pruebas:
+
+openjdk version "1.8.0_121"
+OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-0ubuntu1.16.04.2-b13)
+OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)
+
+Distributor ID:  elementary
+Description:  elementary OS 0.4 Loki
+
+Sistema con: 64 bits
+ -cpu
+  descripcion: CPU
+  producto: Intel(R) Core(TM) i7-5500U CPU @ 2.40GHz
+    
+ -memoria
+  tamaño: 6GiB
+
+Instrucciones de compilacion:
+Tarea hecha en Java 8, para compilar el archivo bwcs usar:
+				$ javac bwcs.java
+				$ java bwcs
+
+
+Resultados:
+
+Archivos de Prueba:
+-imagen: 
+	tamaño: 2.3MB
+-libro:
+	tamaño: 2.6MB
+
+flag 0%: ./bwss -d -D 100 -L 0.0 localhost 2000 2000
+-imagen: throughput total: 4522330 bytes in 0.479049 seconds at 72.0232 Mbps
+-libro: throughput total: 5124370 bytes in 0.494804 seconds at 79.0128 Mbps
+
+flag 10%: ./bwss -d -D 100 -L 0.1 localhost 2000 2000
+-imagen: throughput total: 4522330 bytes in 270.693 seconds at 0.12746 Mbps
+-libro: throughput total: 5124370 bytes in 308.512 seconds at 0.126724 Mbps
+
+flag 30%: ./bwss -d -D 100 -L 0.3 localhost 2000 2000
+-imagen: throughput total: 4522330 bytes in 954.617 seconds at 0.0361429 Mbps
+-libro: throughput total: 5124370 bytes in 1075.82 seconds at 0.0363403 Mbps
+
+
+netem loss 0%:
+-imagen: throughput total: 4522330 bytes in 0.365575 seconds at 94.3791 Mbps
+-libro: throughput total: 5124370 bytes in 0.474824 seconds at 82.3375 Mbps
+
+netem loss 10%:
+-imagen: throughput total: 4522330 bytes in 755.258 seconds at 0.0456832 Mbps
+-libro: throughput total: 5124370 bytes in 932.023 seconds at 0.0419473 Mbps
+
+Archivos de Prueba:
+-imagen: 
+	tamaño: 214.4 kB
+-libro:
+	tamaño: 212,2 kB
+
+netem loss 30%
+-imagen: throughput total: 428776 bytes in 581.647 seconds at 0.00562421 Mbps
+-libro: throughput total: 424404 bytes in 325.994 seconds at 0.00993254 Mbps
+
+Obs: para perdida de 30% con netem se utilizaron archivos de prueba de menor
+tamaño debido a la falta de tiempo.
+
+Conclusion:
+	Con stop & wait se pudieron mandar archivos de tamaño mayores a 200kB, pero es ineficiente con respecto al tiempo que toma cuando hay perdidas. 
