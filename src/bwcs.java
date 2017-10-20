@@ -12,7 +12,11 @@ public class bwcs {
         return l5;
     }
 
-    public static String getNextId() {
+    public static String getNextID() {
+        return bwcs.myIntToString5(bwcs.sn);
+    }
+
+    public static String increaseId() {
         bwcs.sn++;
         bwcs.sn = bwcs.sn%100000;
         return bwcs.myIntToString5(bwcs.sn);
@@ -27,7 +31,7 @@ public class bwcs {
         return c;
     }
 
-    public static int sn = -1;
+    public static int sn = 0;
 
     public static void main(String args[]) {
         DatagramSocket udp = null;

@@ -5,8 +5,6 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.*;
-import java.util.Arrays;
-import java.util.stream.Stream;
 
 public class TCPtoUDP implements Runnable{
     private Thread thread1;
@@ -41,26 +39,23 @@ public class TCPtoUDP implements Runnable{
                 byte[] buffer5Bytes = new byte[5];
                 in.read(buffer5Bytes);
                 String ds = new String(buffer5Bytes, "UTF-8");
-                String seqN = bwcs.getNextId();
-
                 if(!isNumeric(ds)){
                     continue;
-                }
-
-
-                else if(ds.equals("00000")) {
-                    byte[] header = ("D" + seqN).getBytes();
-                    reqStartUdp = new DatagramPacket(header, header.length, host, port);
-                    stopAndWait(reqStartUdp, timeout, seqN);
-                    break;
                 } else {
-
-                    byte[] buffer = new byte[Integer.parseInt(ds)];
-                    in.read(buffer);
-                    byte[] header = ("D" + seqN).getBytes();
-                    byte[] data = bwcs.concat(header, buffer);
-                    DatagramPacket dp = new DatagramPacket(data, data.length, host, port);
-                    stopAndWait(dp, timeout, seqN);
+                    String seqN = bwcs.getNextID();
+                    if(ds.equals("00000")) {
+                        byte[] header = ("D" + seqN).getBytes();
+                        reqStartUdp = new DatagramPacket(header, header.length, host, port);
+                        stopAndWait(reqStartUdp, timeout, seqN);
+                        break;
+                    } else {
+                        byte[] buffer = new byte[Integer.parseInt(ds)];
+                        in.read(buffer);
+                        byte[] header = ("D" + seqN).getBytes();
+                        byte[] data = bwcs.concat(header, buffer);
+                        DatagramPacket dp = new DatagramPacket(data, data.length, host, port);
+                        stopAndWait(dp, timeout, seqN);
+                    }
                 }
             }
         } catch (EOFException e) {
@@ -99,6 +94,7 @@ public class TCPtoUDP implements Runnable{
             while(!bwcs.synchronizedStack.isEmpty()) {
                 String ackN = bwcs.synchronizedStack.pop();
                 if(ackN.equals(seqN)){
+                    bwcs.increaseId();
                     return;
                 }
             }

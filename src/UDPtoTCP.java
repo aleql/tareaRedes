@@ -32,7 +32,6 @@ public class UDPtoTCP implements Runnable{
                 DatagramPacket req = new DatagramPacket(bufferDatagram, bufferDatagram.length);
                 udp.receive(req);
                 String msgType = new String(req.getData(), "UTF-8").substring(0,1);
-                //System.out.println(msgType);
 
                 if (msgType.equals("A")) {
                     bwcs.synchronizedStack.push(req);
@@ -43,7 +42,7 @@ public class UDPtoTCP implements Runnable{
                 length = req.getLength();
                 String seqN = new String(req.getData(), "UTF-8").substring(1,6);
 
-                if(expectedSeqN==-1){
+                if(expectedSeqN == -1){
                     expectedSeqN = Integer.parseInt(seqN);
                 }
 
@@ -59,11 +58,10 @@ public class UDPtoTCP implements Runnable{
                     byte[] datagramData = Arrays.copyOfRange(req.getData(),6, req.getLength());
                     byte[] lengtHeader = bwcs.myIntToString5(length-6).getBytes();
                     byte[] sendData = bwcs.concat(lengtHeader,datagramData);
-                    //System.out.println(new String(sendData, "UTF-8"));
+
                     out.write(sendData);
                     expectedSeqN++;
                     if (length == 6) {
-                        System.out.println("paquete largo 6");
                         break;
                     }
                 }
