@@ -16,8 +16,8 @@ public class bwcs {
         return bwcs.myIntToString5(bwcs.sn);
     }
 
-    public static String increaseId() {
-        bwcs.sn++;
+    public static String increaseId(int k) {
+        bwcs.sn += k;
         bwcs.sn = bwcs.sn%100000;
         return bwcs.myIntToString5(bwcs.sn);
     }
@@ -58,8 +58,7 @@ public class bwcs {
             }
         }
     }
-
-    }
+}
 
 
 
