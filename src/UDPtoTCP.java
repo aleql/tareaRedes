@@ -50,21 +50,29 @@ public class UDPtoTCP implements Runnable{
                 InetAddress host = InetAddress.getByName("localhost");
                 int port = 2000;
                 byte[] header = ("A" + seqN).getBytes();
+
+                if (!(expectedSeqN == Integer.parseInt(seqN)) ){
+                    header = ("A" + expectedSeqN).getBytes();
+                }
                 DatagramPacket dp = new DatagramPacket(header, header.length, host, port);
-                udp.send(dp);
 
                 if (expectedSeqN == Integer.parseInt(seqN)) {
+                    udp.send(dp);
                     //Se concatena el arreglo con el largo junto a los datos y se mandan como un solo paquete
                     byte[] datagramData = Arrays.copyOfRange(req.getData(),6, req.getLength());
                     byte[] lengtHeader = bwcs.myIntToString5(length-6).getBytes();
                     byte[] sendData = bwcs.concat(lengtHeader,datagramData);
 
                     out.write(sendData);
+
                     expectedSeqN++;
+                    System.out.println(length);
                     if (length == 6) {
                         break;
                     }
                 }
+
+
             }
         } catch (EOFException e) {
             System.out.println("EOF: " + e.getMessage());
