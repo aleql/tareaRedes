@@ -23,6 +23,10 @@ public class Par<T extends Comparable<T>, R>
         return tail;
     }
 
+    public void setTail(R k) { tail = k; }
+
+    public void setHead(T h) { head = h; }
+
     @Override
     public int compareTo(Par<T, R> o) {
         int compareHead = o.getHead().compareTo(head);

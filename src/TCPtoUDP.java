@@ -11,13 +11,14 @@ public class TCPtoUDP implements Runnable {
     private String threadName;
     private DatagramSocket udp;
     private Socket socketTCP;
-    static int defaultWindowsSize = 10;
-    static int windowSize = 10;
-    static boolean isFirst = true;
-    static ArrayList<Par<String, DatagramPacket>> datagramPacketArray = new ArrayList<>();
-    static int timeout = 1000;
-    static String seqN = bwcs.getNextID();
-    static long tStart = 0;
+    int defaultWindowsSize = 10;
+    int windowSize = 10;
+    boolean isFirst = true;
+    ArrayList<Par<String, DatagramPacket>> datagramPacketArray = new ArrayList<>();
+    int timeout = 1000;
+    String seqN = bwcs.getNextID();
+    long tStart = 0;
+    Par<String, Integer>  fastRetransmit = new Par<>(":D",0);
 
 
     public TCPtoUDP(String name, DatagramSocket udp, Socket socketTCP) {
@@ -48,6 +49,7 @@ public class TCPtoUDP implements Runnable {
                     continue;
                 } else {
                     seqN = bwcs.getNextID();
+                    System.out.println("send: " + seqN);
                     if (ds.equals("00000")) {
                         byte[] header = ("D" + seqN).getBytes();
                         reqStartUdp = new DatagramPacket(header, header.length, host, port);
@@ -83,7 +85,6 @@ public class TCPtoUDP implements Runnable {
     }
 
     public void goBackN(DatagramPacket dp) throws IOException {
-        System.out.println(seqN);
         if (isFirst) {
             tStart = System.currentTimeMillis();
             isFirst = false;
@@ -96,38 +97,64 @@ public class TCPtoUDP implements Runnable {
         datagramPacketArray.add(new Par(seqN, dp));
         --windowSize;
         bwcs.increaseId(1);
-        if (new String(dp.getData(), "UTF-8").equals("D00000")) {
-            while (windowSize > 0) {
+        if(Integer.parseInt(seqN)==1616){
+            System.out.println("->" + new String(dp.getData(), "UTF-8"));
+        }
+        if (dp.getData().length == 6) {
+            while (datagramPacketArray.size() > 0) {
                 waitsend();
             }
         }
     }
 
     private void retransmit() throws IOException {
-        isFirst = true;
-        windowSize = defaultWindowsSize;
-        while (!datagramPacketArray.isEmpty()) {
-            this.udp.send(datagramPacketArray.remove(0).getTail());
+        System.out.println("retransmit");
+        System.out.println(new String(datagramPacketArray.get(0).getTail().getData(), "UTF-8").substring(0,6));
+        for (Par<String, DatagramPacket> stringDatagramPacketPar : datagramPacketArray) {
+            this.udp.send(stringDatagramPacketPar.getTail());
         }
+        tStart = System.currentTimeMillis();
     }
 
     private void waitsend() throws IOException {
         while (true) {
             while (!bwcs.synchronizedStack.isEmpty()) {
                 String ackN = bwcs.synchronizedStack.pop();
+                System.out.println(fastRetransmit.toString());
+                System.out.println("Pop: " + ackN);
+                if(fastRetransmit.getHead().equals(ackN)) {
+                    fastRetransmit.setTail(fastRetransmit.getTail() + 1);
+                } else {
+                    fastRetransmit.setHead(ackN);
+                    fastRetransmit.setTail(1);
+                }
+
+                if(fastRetransmit.getTail() == 3) {
+                    System.out.println("Retransmit");
+                    fastRetransmit.setHead(":D");
+                    fastRetransmit.setTail(1);
+                    while (!bwcs.synchronizedStack.isEmpty()) { bwcs.synchronizedStack.pop(); }
+                    retransmit();
+                    continue;
+                }
                 if (ackN.compareTo(seqN) <= 0) {
                     tStart = System.currentTimeMillis();
 
-
                     if (!datagramPacketArray.isEmpty()) {
                         String seqTemp = datagramPacketArray.get(0).getHead();
-                        while (ackN.compareTo(seqTemp) > 0) {
+                        while (ackN.compareTo(seqTemp) >= 0) {
+
                             if (datagramPacketArray.isEmpty()) {
                                 break;
                             }
 
                             datagramPacketArray.remove(0);
+
+                            if (datagramPacketArray.isEmpty()) {
+                                break;
+                            }
                             seqTemp = datagramPacketArray.get(0).getHead();
+
                             windowSize += 1;
                             //bwcs.increaseId(1);
                         }
@@ -143,7 +170,7 @@ public class TCPtoUDP implements Runnable {
             long tEnd = System.currentTimeMillis();
             long tDelta = tEnd - tStart;
             if (tDelta >= timeout) {
-                tStart = System.currentTimeMillis();
+                System.out.println("timeout");
                 retransmit();
                 //>:()
             }
