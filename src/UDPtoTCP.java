@@ -35,7 +35,7 @@ public class UDPtoTCP implements Runnable{
 
                 if (msgType.equals("A")) {
                     String seqNAux = new String(req.getData(), "UTF-8").substring(1,6);
-                    System.out.println("push ACK: " + seqNAux);
+                    //System.out.println("push ACK: " + seqNAux);
                     bwcs.synchronizedStack.push(req);
                     continue;
                 }
@@ -54,7 +54,7 @@ public class UDPtoTCP implements Runnable{
                 byte[] header = ("A" + seqN).getBytes();
 
                 if (!(expectedSeqN == Integer.parseInt(seqN)) ){
-                    System.out.println(expectedSeqN + " -><- " + seqN);
+                    //System.out.println(expectedSeqN + " -><- " + seqN);
                     header = ("A" + expectedSeqN).getBytes();
                 }
                 DatagramPacket dp = new DatagramPacket(header, header.length, host, port);
@@ -69,7 +69,7 @@ public class UDPtoTCP implements Runnable{
                     out.write(sendData);
 
                     expectedSeqN++;
-                    System.out.println(length);
+                    //System.out.println(length);
                     if (length == 6) {
                         break;
                     }
